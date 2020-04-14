@@ -24,10 +24,10 @@ class FS_MODEL1(nn.Module):
         return output, hidden
 
 class FS_MODEL2(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size, batch_size):
+    def __init__(self, input_size, hidden_size, output_size, batch_size, n_layers):
         super(FS_MODEL2, self).__init__()
 
-        self.rnn = nn.LSTM(input_size, hidden_size, batch_first=False)
+        self.rnn = nn.LSTM(input_size, hidden_size, batch_first=False, num_layers=n_layers)
         self.fc = nn.Linear(hidden_size, output_size)
         self.softmax = nn.LogSoftmax(dim=2)
 
@@ -35,7 +35,7 @@ class FS_MODEL2(nn.Module):
         self.hidden_size = hidden_size
 
     def forward(self, input, hidden):
-        
+ 
         output, hidden = self.rnn(input, hidden)        
         output = self.fc(output)
         output = self.softmax(output)

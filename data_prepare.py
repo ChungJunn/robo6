@@ -6,7 +6,8 @@ def removeEmptyRows(data):
     
     rows = []
     for n in range(n_samples):
-        if np.isnan(data[n,0]):
+        # if first or second elements are nans remove
+        if np.isnan(data[n,0]) or np.isnan(data[n,1]):
             continue
         else: rows.append(data[n].reshape(1,-1))
 
