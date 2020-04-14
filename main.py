@@ -9,6 +9,7 @@ from torch.autograd import Variable
 
 import pandas as pd
 import numpy as np
+import pickle as pkl
 
 import math
 import sys
@@ -21,7 +22,7 @@ from data import FSIterator
 parser = argparse.ArgumentParser()
 parser.add_argument('--tr_file', type=str, help='')
 parser.add_argument('--val_file', type=str, help='')
-parser.add_argument('--out_dir', type=str, help='')
+parser.add_argument('--out_file', type=str, help='')
 
 parser.add_argument('--batch_size', type=int, help='')
 parser.add_argument('--optimizer', type=str, help='')
@@ -31,6 +32,8 @@ parser.add_argument('--n_layers', type=int, help='')
 parser.add_argument('--patience', type=int, default=5, help='')
 parser.add_argument('--input_size', type=int, default=1, help='')
 parser.add_argument('--output_size', type=int, default=2, help='')
+parser.add_argument('--print_every', type=int, default=1000, help='')
+parser.add_argument('--valid_every', type=int, default=5000, help='')
 
 args = parser.parse_args()
 
@@ -77,7 +80,7 @@ def evaluate(model, input, target, mask, criterion):
 
     return output, loss.item()
 
-def validate(model, validiter):
+def validate(model, validiter, device, criterion):
     current_loss = 0
     model.eval()
     with torch.no_grad(): 
@@ -102,9 +105,10 @@ def timeSince(since):
     s -= m * 60
     return '%dm %ds' % (m, s)
 
-if __name__ == "__main__":
+ 
+def train_main(args):
     trainiter = FSIterator(args.tr_file, batch_size = args.batch_size)
-    validiter = FSIterator(args.val_file, batch_size = args.batch_size, just_epoch=True) # batchd_size 1 is recommended, since remainder is discard
+    validiter = FSIterator(args.val_file, batch_size = args.batch_size, just_epoch=True)
  
     device = torch.device("cuda")     
 
@@ -116,62 +120,47 @@ if __name__ == "__main__":
     mystring = "optim." + args.optimizer
     optimizer = eval(mystring)(model.parameters(), args.lr)
     criterion = nn.NLLLoss(reduction='none')
-    
-    print_every = 1000
-    valid_every = 5000
 
     start = time.time()
- 
-    def train_main(model, trainiter, validiter, optimizer, device, print_every, valid_every):
-        tr_losses=[]
-        val_losses=[]
-        current_loss =0
-        valid_loss = 0.0
-        bad_counter = 0
-        best_loss = -1
+    tr_losses=[]
+    val_losses=[]
+    current_loss =0
+    valid_loss = 0.0
+    bad_counter = 0
+    best_loss = -1
 
-        for i, (tr_x, tr_y, xm, end_of_file) in enumerate(trainiter):
-            tr_x, tr_y, xm = torch.FloatTensor(tr_x), torch.LongTensor(tr_y), torch.FloatTensor(xm)
-            tr_x, tr_y, xm = Variable(tr_x).to(device), Variable(tr_y).to(device), Variable(xm).to(device)
+    for i, (tr_x, tr_y, xm, end_of_file) in enumerate(trainiter):
+        tr_x, tr_y, xm = torch.FloatTensor(tr_x), torch.LongTensor(tr_y), torch.FloatTensor(xm)
+        tr_x, tr_y, xm = Variable(tr_x).to(device), Variable(tr_y).to(device), Variable(xm).to(device)
 
-            output, loss = train(model, tr_x, xm, tr_y, optimizer, criterion)
-            current_loss += loss
+        output, loss = train(model, tr_x, xm, tr_y, optimizer, criterion)
+        current_loss += loss
 
-            # print iter number, loss, prediction, and target
-            if (i+1) % print_every == 0:
-                
-                top_n, top_i = output.topk(1)
-                print("%d (%s) %.4f" % (i+1,timeSince(start), current_loss/print_every))
-                tr_losses.append(current_loss / print_every)
+        # print iter number, loss, prediction, and target
+        if (i+1) % args.print_every == 0:
+            
+            top_n, top_i = output.topk(1)
+            print("%d (%s) %.4f" % (i+1,timeSince(start), current_loss/args.print_every))
+            tr_losses.append(current_loss / args.print_every)
 
-                current_loss=0
-        
-            if (i+1) % valid_every == 0:
-                valid_loss = validate(model, validiter)
-                print("val : {:.4f}".format(valid_loss))
-        
-                if valid_loss < best_loss or best_loss < 0:
-                    bad_counter = 0
-                    torch.save(model, args.out_dir)
-                    val_losses.append(valid_loss)                
-                    best_loss = valid_loss
-
-                else:
-                    bad_counter += 1
-
-                if bad_counter > args.patience:
-                    print('Early Stopping')
-                    break
-   
-        return tr_losses, val_losses
+            current_loss=0
     
-    tr_losses, val_losses = train_main(model, trainiter, validiter, optimizer, device, print_every, valid_every)
+        if (i+1) % args.valid_every == 0:
+            valid_loss = validate(model, validiter, device, criterion)
+            print("val : {:.4f}".format(valid_loss))
     
-    ''' 
-    import matplotlib
-    matplotlib.use('Agg')
-    import matplotlib.pyplot as plt
+            if valid_loss < best_loss or best_loss < 0:
+                bad_counter = 0
+                torch.save(model, args.out_file)
+                val_losses.append(valid_loss)                
+                best_loss = valid_loss
 
-    plt.plot(val_losses)
-    plt.savefig(args.out_dir + ".png")
-    '''
+            else:
+                bad_counter += 1
+
+            if bad_counter > args.patience:
+                print('Early Stopping')
+                break
+
+    return tr_losses, val_losses
+

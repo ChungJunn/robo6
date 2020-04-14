@@ -1,0 +1,13 @@
+tr_file: /home/nmt2/chl/robo6/data/train.csv
+val_file: /home/nmt2/chl/robo6/data/valid.csv
+out_file: /home/nmt2/chl/robo6/adam.pth
+batch_size: 32
+optimizer: Adam
+lr: 0.001
+dim_hidden: 20
+n_layers: 2
+patience: 5
+input_size: 1
+output_size: 2
+print_every: 1000
+valid_every: 5000
