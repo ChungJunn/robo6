@@ -33,8 +33,6 @@ def test_main(args):
             if pred[t].item() == y[t].item():
                 n_corrects[pred[t].item(),t] += 1
 
-        if i == 10: break #TODO for temporaray testing
-
     accs = []
     for i in range(args.horizon):
         if n_totals[i] != 0:

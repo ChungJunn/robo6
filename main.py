@@ -137,7 +137,6 @@ def train_main(args):
                 torch.save(model, args.model_out_file)
                 val_losses.append(valid_loss)                
                 best_loss = valid_loss
-                break
 
             else:
                 bad_counter += 1
