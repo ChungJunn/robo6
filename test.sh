@@ -1,6 +1,6 @@
 EXP_NAME='hello'
 
-DATA_DIR=$HOME'/chl/robo6/data/'
+DATA_DIR=$HOME'/chl/robo6/data/initial/'
 SAVE_DIR=$HOME'/chl/robo6/'
 
 TEST_FILE=$DATA_DIR'test.csv'

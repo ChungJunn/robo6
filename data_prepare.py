@@ -17,7 +17,6 @@ def removeEmptyRows(data):
 
 import argparse
 parser = argparse.ArgumentParser(description="", formatter_class=argparse.RawTextHelpFormatter)
-parser.add_argument("--data_dir", type=str, default='')
 parser.add_argument("--data_file", type=str, default='')
 parser.add_argument("--tr_out_file", type=str, default='')
 parser.add_argument("--val_out_file", type=str, default='')
@@ -27,13 +26,8 @@ parser.add_argument("--seed", type=int, default='')
 args = parser.parse_args()
 
 if __name__ == "__main__":
-    data_file = args.data_dir+'/'+args.data_file
-    
-    tr_out_file = args.data_dir+'/'+args.tr_out_file
-    val_out_file = args.data_dir+'/'+args.val_out_file
-    test_out_file = args.data_dir+'/'+args.test_out_file
 
-    df_data = pd.read_csv(data_file)
+    df_data = pd.read_csv(args.data_file)
     np_data = np.asarray(df_data)
     np_data = removeEmptyRows(np_data)
     
@@ -57,9 +51,9 @@ if __name__ == "__main__":
     valid_data = np_data[train_split:valid_split]
     test_data = np_data[valid_split:]
 
-    with open(tr_out_file, "wt") as fp:
+    with open(args.tr_out_file, "wt") as fp:
         np.savetxt(fp, train_data, delimiter=',')
-    with open(val_out_file, "wt") as fp:
+    with open(args.val_out_file, "wt") as fp:
         np.savetxt(fp, valid_data, delimiter=',')
-    with open(test_out_file, "wt") as fp:
+    with open(args.test_out_file, "wt") as fp:
         np.savetxt(fp, test_data, delimiter=',')
